@@ -266,7 +266,11 @@ bool TrustRegionMinimizer::EvaluateGradientAndJacobian(
   // Where the Plus operator lifts the negative gradient to the
   // ambient space, adds it to x and projects it on the hypercube
   // defined by the bounds.
-  negative_gradient_ = -gradient_;
+
+  // FIXME @demmeln: what should we do for stepsize here?
+  double stepsize = 1e-8;
+
+  negative_gradient_ = -stepsize * gradient_;
   if (!evaluator_->Plus(x_.data(),
                         negative_gradient_.data(),
                         projected_gradient_step_.data())) {
@@ -277,8 +281,12 @@ bool TrustRegionMinimizer::EvaluateGradientAndJacobian(
   }
 
   iteration_summary_.gradient_max_norm =
-      (x_ - projected_gradient_step_).lpNorm<Eigen::Infinity>();
-  iteration_summary_.gradient_norm = (x_ - projected_gradient_step_).norm();
+      ((x_ - projected_gradient_step_) / stepsize).lpNorm<Eigen::Infinity>();
+  iteration_summary_.gradient_norm =
+      ((x_ - projected_gradient_step_) / stepsize).norm();
+
+  negative_gradient_ /= stepsize;
+
   return true;
 }
 
