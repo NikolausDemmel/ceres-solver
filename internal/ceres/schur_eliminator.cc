@@ -153,6 +153,10 @@ SchurEliminatorBase::Create(const LinearSolver::Options& options) {
      (options.f_block_size == 8)) {
    return new SchurEliminator<8, 1, 8>(options);
  }
+ if ((options.row_block_size == 8) &&
+     (options.e_block_size == 1)) {
+   return new SchurEliminator<8, 1, Eigen::Dynamic>(options);
+ }
 
 #endif
   VLOG(1) << "Template specializations not found for <"

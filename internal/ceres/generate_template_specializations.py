@@ -73,7 +73,8 @@ SPECIALIZATIONS = [(2, 2, 2),
                    (4, 4, 4),
                    (4, 4, "Eigen::Dynamic"),
                    (8, 1, 6),
-                   (8, 1, 8)]
+                   (8, 1, 8),
+                   (8, 1, "Eigen::Dynamic")]
 
 import schur_eliminator_template
 import partitioned_matrix_view_template
