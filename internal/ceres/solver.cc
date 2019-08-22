@@ -239,7 +239,8 @@ bool LineSearchOptionsAreValid(const Solver::Options& options, string* error) {
   OPTION_LT_OPTION(max_line_search_step_contraction,
                    min_line_search_step_contraction);
   OPTION_LE(min_line_search_step_contraction, 1.0);
-  OPTION_GT(max_num_line_search_step_size_iterations, 0);
+  OPTION_GE(max_num_line_search_step_size_iterations,
+            (options.minimizer_type == ceres::TRUST_REGION ? 0 : 1));
   OPTION_GT(line_search_sufficient_function_decrease, 0.0);
   OPTION_LT_OPTION(line_search_sufficient_function_decrease,
                    line_search_sufficient_curvature_decrease);
@@ -491,7 +492,7 @@ void Solver::Solve(const Solver::Options& options,
     return;
   }
 
-  ProblemImpl* problem_impl = problem->problem_impl_.get();
+  ProblemImpl* problem_impl = problem->impl_.get();
   Program* program = problem_impl->mutable_program();
   PreSolveSummarize(options, problem_impl, summary);
 
@@ -566,7 +567,7 @@ void Solver::Solve(const Solver::Options& options,
   }
 
   const double postprocessor_start_time = WallTimeInSeconds();
-  problem_impl = problem->problem_impl_.get();
+  problem_impl = problem->impl_.get();
   program = problem_impl->mutable_program();
   // On exit, ensure that the parameter blocks again point at the user
   // provided values and the parameter blocks are numbered according
