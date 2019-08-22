@@ -159,6 +159,10 @@ PartitionedMatrixViewBase::Create(const LinearSolver::Options& options,
      (options.f_block_size == 8)) {
    return new PartitionedMatrixView<8, 1, 8>(matrix, options.elimination_groups[0]);
  }
+ if ((options.row_block_size == 8) &&
+     (options.e_block_size == 1)) {
+   return new PartitionedMatrixView<8, 1, Eigen::Dynamic>(matrix, options.elimination_groups[0]);
+ }
 
 #endif
   VLOG(1) << "Template specializations not found for <"

@@ -234,6 +234,13 @@ void GetBestSchurTemplateSpecialization(int* row_block_size,
    *f_block_size = 8;
   return;
  }
+ if ((options.row_block_size == 8) &&
+     (options.e_block_size == 1)) {
+   *row_block_size = 8;
+   *e_block_size = 1;
+   *f_block_size = Eigen::Dynamic;
+  return;
+ }
 
 #endif
   return;
