@@ -147,6 +147,20 @@ SchurEliminatorBase* SchurEliminatorBase::Create(
      (options.e_block_size == 4)) {
     return new SchurEliminator<4, 4, Eigen::Dynamic>(options);
   }
+  if ((options.row_block_size == 8) &&
+     (options.e_block_size == 1) &&
+     (options.f_block_size == 6)) {
+    return new SchurEliminator<8, 1, 6>(options);
+  }
+  if ((options.row_block_size == 8) &&
+     (options.e_block_size == 1) &&
+     (options.f_block_size == 8)) {
+    return new SchurEliminator<8, 1, 8>(options);
+  }
+  if ((options.row_block_size == 8) &&
+     (options.e_block_size == 1)) {
+    return new SchurEliminator<8, 1, Eigen::Dynamic>(options);
+  }
 
 #endif
   VLOG(1) << "Template specializations not found for <"
