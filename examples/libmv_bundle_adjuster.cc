@@ -307,8 +307,8 @@ class EndianAwareFileReader {
     return value;
   }
  private:
-  static const long int kLittleEndian = 0x03020100ul;
-  static const long int kBigEndian = 0x00010203ul;
+  static constexpr long int kLittleEndian = 0x03020100ul;
+  static constexpr long int kBigEndian = 0x00010203ul;
 
   // Switch endian type between big to little.
   template <typename T>
@@ -780,7 +780,7 @@ void EuclideanBundleCommonIntrinsics(const vector<Marker> &all_markers,
 }  // namespace
 
 int main(int argc, char **argv) {
-  CERES_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
+  GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
   if (FLAGS_input.empty()) {

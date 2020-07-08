@@ -39,10 +39,10 @@ namespace ceres {
 namespace internal {
 
 // Noise factor for randomized cost function.
-static const double kNoiseFactor = 0.01;
+static constexpr double kNoiseFactor = 0.01;
 
 // Default random seed for randomized cost function.
-static const unsigned int kRandomSeed = 1234;
+static constexpr unsigned int kRandomSeed = 1234;
 
 // y1 = x1'x2      -> dy1/dx1 = x2,               dy1/dx2 = x1
 // y2 = (x1'x2)^2  -> dy2/dx1 = 2 * x2 * (x1'x2), dy2/dx2 = 2 * x1 * (x1'x2)
@@ -57,9 +57,9 @@ class EasyFunctor {
 
 class EasyCostFunction : public SizedCostFunction<3, 5, 5> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** /* not used */) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** /* not used */) const final {
     return functor_(parameters[0], parameters[1], residuals);
   }
 
@@ -82,9 +82,9 @@ class TranscendentalFunctor {
 
 class TranscendentalCostFunction : public SizedCostFunction<2, 5, 5> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** /* not used */) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** /* not used */) const final {
     return functor_(parameters[0], parameters[1], residuals);
   }
  private:
@@ -101,9 +101,9 @@ class ExponentialFunctor {
 
 class ExponentialCostFunction : public SizedCostFunction<1, 1> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** /* not used */) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** /* not used */) const final {
     return functor_(parameters[0], residuals);
   }
 
@@ -135,9 +135,9 @@ class RandomizedCostFunction : public SizedCostFunction<1, 1> {
       : functor_(noise_factor, random_seed) {
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** /* not used */) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** /* not used */) const final {
     return functor_(parameters[0], residuals);
   }
 

@@ -48,6 +48,7 @@ namespace ceres {
 namespace internal {
 
 using std::vector;
+const double kTolerance = 1e-12;
 
 // We pick a (non-quadratic) function whose derivative are easy:
 //
@@ -154,7 +155,7 @@ class BadTestTerm : public CostFunction {
         if (jacobians[j]) {
           for (int u = 0; u < parameter_block_sizes()[j]; ++u) {
             // See comments before class.
-            jacobians[j][u] = -f * a_[j][u] + 0.001;
+            jacobians[j][u] = -f * a_[j][u] + kTolerance;
           }
         }
       }
@@ -168,7 +169,7 @@ class BadTestTerm : public CostFunction {
   vector<vector<double>> a_;  // our vectors.
 };
 
-const double kTolerance = 1e-6;
+
 
 static void CheckDimensions(const GradientChecker::ProbeResults& results,
                             const std::vector<int>& parameter_sizes,
@@ -290,9 +291,9 @@ class LinearCostFunction : public CostFunction {
     set_num_residuals(residuals_offset_.size());
   }
 
-  virtual bool Evaluate(double const* const* parameter_ptrs,
-                        double* residuals_ptr,
-                        double** residual_J_params) const {
+  bool Evaluate(double const* const* parameter_ptrs,
+                double* residuals_ptr,
+                double** residual_J_params) const final {
     CHECK_GE(residual_J_params_.size(), 0.0);
     VectorRef residuals(residuals_ptr, residual_J_params_[0].rows());
     residuals = residuals_offset_;
@@ -347,22 +348,22 @@ class LinearCostFunction : public CostFunction {
  */
 class MatrixParameterization : public LocalParameterization {
  public:
-  virtual bool Plus(const double* x,
-                    const double* delta,
-                    double* x_plus_delta) const {
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const final {
     VectorRef(x_plus_delta, GlobalSize()) =
         ConstVectorRef(x, GlobalSize()) +
         (global_J_local * ConstVectorRef(delta, LocalSize()));
     return true;
   }
 
-  virtual bool ComputeJacobian(const double* /*x*/, double* jacobian) const {
+  bool ComputeJacobian(const double* /*x*/, double* jacobian) const final {
     MatrixRef(jacobian, GlobalSize(), LocalSize()) = global_J_local;
     return true;
   }
 
-  virtual int GlobalSize() const { return global_J_local.rows(); }
-  virtual int LocalSize() const { return global_J_local.cols(); }
+  int GlobalSize() const final { return global_J_local.rows(); }
+  int LocalSize() const final { return global_J_local.cols(); }
 
   Matrix global_J_local;
 };

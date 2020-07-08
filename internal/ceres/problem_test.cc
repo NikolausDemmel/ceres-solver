@@ -65,11 +65,12 @@ class UnaryCostFunction : public CostFunction {
     set_num_residuals(num_residuals);
     mutable_parameter_block_sizes()->push_back(parameter_block_size);
   }
+
   virtual ~UnaryCostFunction() {}
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < num_residuals(); ++i) {
       residuals[i] = 1;
     }
@@ -88,9 +89,9 @@ class BinaryCostFunction: public CostFunction {
     mutable_parameter_block_sizes()->push_back(parameter_block2_size);
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < num_residuals(); ++i) {
       residuals[i] = 2;
     }
@@ -111,15 +112,33 @@ class TernaryCostFunction: public CostFunction {
     mutable_parameter_block_sizes()->push_back(parameter_block3_size);
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < num_residuals(); ++i) {
       residuals[i] = 3;
     }
     return true;
   }
 };
+
+
+TEST(Problem, MoveConstructor) {
+  Problem src;
+  double x;
+  src.AddParameterBlock(&x, 1);
+  Problem dst(std::move(src));
+  EXPECT_TRUE(dst.HasParameterBlock(&x));
+}
+
+TEST(Problem, MoveAssignment) {
+  Problem src;
+  double x;
+  src.AddParameterBlock(&x, 1);
+  Problem dst;
+  dst = std::move(src);
+  EXPECT_TRUE(dst.HasParameterBlock(&x));
+}
 
 TEST(Problem, AddResidualWithNullCostFunctionDies) {
   double x[3], y[4], z[5];
@@ -315,9 +334,9 @@ class DestructorCountingCostFunction : public SizedCostFunction<3, 4, 5> {
     *num_destructions_ += 1;
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     return true;
   }
 
@@ -1071,9 +1090,9 @@ class QuadraticCostFunction : public CostFunction {
     }
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     for (int i = 0; i < kNumResiduals; ++i) {
       residuals[i] = i;
       for (int j = 0; j < kNumParameterBlocks; ++j) {
@@ -2075,6 +2094,42 @@ TEST(Problem, SetAndGetParameterUpperBound) {
             std::numeric_limits<double>::max());
   EXPECT_EQ(problem.GetParameterUpperBound(x, 1),
             std::numeric_limits<double>::max());
+}
+
+TEST(Problem, SetParameterizationTwice) {
+  Problem problem;
+  double x[] = {1.0, 2.0, 3.0};
+  problem.AddParameterBlock(x, 3);
+  problem.SetParameterization(x, new SubsetParameterization(3, {1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 2);
+
+  problem.SetParameterization(x, new SubsetParameterization(3, {0, 1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 1);
+}
+
+TEST(Problem, SetParameterizationAndThenClearItWithNull) {
+  Problem problem;
+  double x[] = {1.0, 2.0, 3.0};
+  problem.AddParameterBlock(x, 3);
+  problem.SetParameterization(x, new SubsetParameterization(3, {1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 2);
+
+  problem.SetParameterization(x, nullptr);
+  EXPECT_EQ(problem.GetParameterization(x), nullptr);
+  EXPECT_EQ(problem.ParameterBlockLocalSize(x), 3);
+  EXPECT_EQ(problem.ParameterBlockSize(x), 3);
+}
+
+TEST(Solver, ZeroSizedLocalParameterizationMeansParameterBlockIsConstant) {
+  double x = 0.0;
+  double y = 1.0;
+  Problem problem;
+  problem.AddResidualBlock(new BinaryCostFunction(1, 1, 1), nullptr, &x, &y);
+  problem.SetParameterization(&y, new SubsetParameterization(1, {0}));
+  EXPECT_TRUE(problem.IsParameterBlockConstant(&y));
 }
 
 }  // namespace internal

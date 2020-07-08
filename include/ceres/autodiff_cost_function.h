@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@
 // for a series of measurements, where there is an instance of the cost function
 // for each measurement k.
 //
-// The actual cost added to the total problem is e^2, or (k - x'k)^2; however,
+// The actual cost added to the total problem is e^2, or (k - x'y)^2; however,
 // the squaring is implicitly done by the optimization framework.
 //
 // To write an auto-differentiable cost function for the above model, first
@@ -126,6 +126,7 @@
 #define CERES_PUBLIC_AUTODIFF_COST_FUNCTION_H_
 
 #include <memory>
+
 #include "ceres/internal/autodiff.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/types.h"
@@ -154,8 +155,7 @@ class AutoDiffCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
  public:
   // Takes ownership of functor. Uses the template-provided value for the
   // number of residuals ("kNumResiduals").
-  explicit AutoDiffCostFunction(CostFunctor* functor)
-      : functor_(functor) {
+  explicit AutoDiffCostFunction(CostFunctor* functor) : functor_(functor) {
     static_assert(kNumResiduals != DYNAMIC,
                   "Can't run the fixed-size constructor if the number of "
                   "residuals is set to ceres::DYNAMIC.");
@@ -181,24 +181,23 @@ class AutoDiffCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
   //
   // To handle variadic cost functions, some template magic is needed. It's
   // mostly hidden inside autodiff.h.
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const override {
     using ParameterDims =
         typename SizedCostFunction<kNumResiduals, Ns...>::ParameterDims;
 
     if (!jacobians) {
-      return internal::VariadicEvaluate<ParameterDims>(*functor_,
-                                                       parameters,
-                                                       residuals);
+      return internal::VariadicEvaluate<ParameterDims>(
+          *functor_, parameters, residuals);
     }
-    return internal::AutoDifferentiate<ParameterDims>(
+    return internal::AutoDifferentiate<kNumResiduals, ParameterDims>(
         *functor_,
         parameters,
         SizedCostFunction<kNumResiduals, Ns...>::num_residuals(),
         residuals,
         jacobians);
-  }
+  };
 
  private:
   std::unique_ptr<CostFunctor> functor_;

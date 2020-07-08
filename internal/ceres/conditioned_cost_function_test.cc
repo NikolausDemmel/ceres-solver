@@ -41,7 +41,7 @@ namespace ceres {
 namespace internal {
 
 // The size of the cost functions we build.
-static const int kTestCostFunctionSize = 3;
+static constexpr int kTestCostFunctionSize = 3;
 
 // A simple cost function: return ax + b.
 class LinearCostFunction : public CostFunction {
@@ -51,9 +51,9 @@ class LinearCostFunction : public CostFunction {
     mutable_parameter_block_sizes()->push_back(1);
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     *residuals = **parameters * a_ + b_;
     if (jacobians && *jacobians) {
       **jacobians = a_;

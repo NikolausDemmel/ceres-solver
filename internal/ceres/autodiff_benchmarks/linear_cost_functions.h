@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2020 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,33 +26,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: jodebo_beck@gmx.de (Johannes Beck)
+// Author: darius.rueckert@fau.de (Darius Rueckert)
+//
+//
+#ifndef CERES_INTERNAL_AUTODIFF_BENCHMARKS_LINEAR_COST_FUNCTIONS_H_
+#define CERES_INTERNAL_AUTODIFF_BENCHMARKS_LINEAR_COST_FUNCTIONS_H_
 
-#include "ceres/internal/integer_sequence.h"
-
-#include <type_traits>
+#include "ceres/rotation.h"
 
 namespace ceres {
-namespace internal {
 
-// Unit test for integer_sequence<...>::value_type
-static_assert(std::is_same<integer_sequence<unsigned int, 0>::value_type,
-                           unsigned int>::value,
-              "Unit test of integer sequence value type failed.");
+struct Linear1CostFunction {
+  template <typename T>
+  inline bool operator()(const T* const x, T* residuals) const {
+    residuals[0] = x[0] + T(10);
+    return true;
+  }
+};
 
-// Unit tests for make_integer_sequence
-static_assert(
-    std::is_same<make_integer_sequence<int, 0>, integer_sequence<int>>::value,
-    "Unit test of make integer sequence failed.");
-static_assert(std::is_same<make_integer_sequence<int, 1>,
-                           integer_sequence<int, 0>>::value,
-              "Unit test of make integer sequence failed.");
-static_assert(std::is_same<make_integer_sequence<int, 2>,
-                           integer_sequence<int, 0, 1>>::value,
-              "Unit test of make integer sequence failed.");
-static_assert(std::is_same<make_integer_sequence<int, 3>,
-                           integer_sequence<int, 0, 1, 2>>::value,
-              "Unit test of make integer sequence failed.");
-
-}  // namespace internal
+struct Linear10CostFunction {
+  template <typename T>
+  inline bool operator()(const T* const x, T* residuals) const {
+    for (int i = 0; i < 10; ++i) {
+      residuals[i] = x[i] + T(i);
+    }
+    return true;
+  }
+};
 }  // namespace ceres
+
+#endif  // CERES_INTERNAL_AUTODIFF_BENCHMARKS_LINEAR_COST_FUNCTIONS_H_

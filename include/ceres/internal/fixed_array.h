@@ -39,7 +39,6 @@
 
 #include <Eigen/Core> // For Eigen::aligned_allocator
 
-#include "ceres/internal/algorithm.h"
 #include "ceres/internal/memory.h"
 #include "glog/logging.h"
 
@@ -105,13 +104,13 @@ class FixedArray {
 
  public:
   using allocator_type = typename AllocatorTraits::allocator_type;
-  using value_type = typename allocator_type::value_type;
-  using pointer = typename allocator_type::pointer;
-  using const_pointer = typename allocator_type::const_pointer;
-  using reference = typename allocator_type::reference;
-  using const_reference = typename allocator_type::const_reference;
-  using size_type = typename allocator_type::size_type;
-  using difference_type = typename allocator_type::difference_type;
+  using value_type = typename AllocatorTraits::value_type;
+  using pointer = typename AllocatorTraits::pointer;
+  using const_pointer = typename AllocatorTraits::const_pointer;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using size_type = typename AllocatorTraits::size_type;
+  using difference_type = typename AllocatorTraits::difference_type;
   using iterator = pointer;
   using const_iterator = const_pointer;
   using reverse_iterator = std::reverse_iterator<iterator>;
@@ -163,8 +162,7 @@ class FixedArray {
     CopyRange(storage_.alloc(), storage_.begin(), first, last);
   }
 
-  // Releases any resources.
-  ~FixedArray() {
+  ~FixedArray() noexcept {
     for (auto* cur = storage_.begin(); cur != storage_.end(); ++cur) {
       AllocatorTraits::destroy(storage_.alloc(), cur);
     }
@@ -313,7 +311,7 @@ class FixedArray {
   // Relational operators. Equality operators are elementwise using
   // `operator==`, while order operators order FixedArrays lexicographically.
   friend bool operator==(const FixedArray& lhs, const FixedArray& rhs) {
-    return internal::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
   }
 
   friend bool operator!=(const FixedArray& lhs, const FixedArray& rhs) {
@@ -358,7 +356,7 @@ class FixedArray {
   //     error: call to int __builtin___sprintf_chk(etc...)
   //     will always overflow destination buffer [-Werror]
   //
-  template <typename OuterT = value_type,
+  template <typename OuterT,
             typename InnerT = typename std::remove_extent<OuterT>::type,
             size_t InnerN = std::extent<OuterT>::value>
   struct StorageElementWrapper {
@@ -369,9 +367,6 @@ class FixedArray {
       typename std::conditional<std::is_array<value_type>::value,
                                 StorageElementWrapper<value_type>,
                                 value_type>::type;
-  using StorageElementBuffer =
-      typename std::aligned_storage<sizeof(StorageElement),
-                                    alignof(StorageElement)>::type;
 
   static pointer AsValueType(pointer ptr) { return ptr; }
   static pointer AsValueType(StorageElementWrapper<value_type>* ptr) {
@@ -381,25 +376,25 @@ class FixedArray {
   static_assert(sizeof(StorageElement) == sizeof(value_type), "");
   static_assert(alignof(StorageElement) == alignof(value_type), "");
 
-  struct NonEmptyInlinedStorage {
-    StorageElement* data() {
-      return reinterpret_cast<StorageElement*>(inlined_storage_.data());
-    }
+  class NonEmptyInlinedStorage {
+   public:
+    StorageElement* data() { return reinterpret_cast<StorageElement*>(buff_); }
+    void AnnotateConstruct(size_type) {}
+    void AnnotateDestruct(size_type) {}
 
     // #ifdef ADDRESS_SANITIZER
     //     void* RedzoneBegin() { return &redzone_begin_; }
     //     void* RedzoneEnd() { return &redzone_end_ + 1; }
     // #endif  // ADDRESS_SANITIZER
 
-    void AnnotateConstruct(size_type) {}
-    void AnnotateDestruct(size_type) {}
-
+   private:
     // ADDRESS_SANITIZER_REDZONE(redzone_begin_);
-    std::array<StorageElementBuffer, inline_elements> inlined_storage_;
+    alignas(StorageElement) char buff_[sizeof(StorageElement[inline_elements])];
     // ADDRESS_SANITIZER_REDZONE(redzone_end_);
   };
 
-  struct EmptyInlinedStorage {
+  class EmptyInlinedStorage {
+   public:
     StorageElement* data() { return nullptr; }
     void AnnotateConstruct(size_type) {}
     void AnnotateDestruct(size_type) {}
@@ -459,6 +454,13 @@ class FixedArray {
 
   Storage storage_;
 };
+
+template <typename T, size_t N, typename A>
+constexpr size_t FixedArray<T, N, A>::kInlineBytesDefault;
+
+template <typename T, size_t N, typename A>
+constexpr typename FixedArray<T, N, A>::size_type
+    FixedArray<T, N, A>::inline_elements;
 
 }  // namespace internal
 }  // namespace ceres

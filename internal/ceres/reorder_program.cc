@@ -85,7 +85,7 @@ static int MinParameterBlock(const ResidualBlock* residual_block,
   return min_parameter_block_position;
 }
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 2) && defined(CERES_USE_EIGEN_SPARSE)
+#if defined(CERES_USE_EIGEN_SPARSE)
 Eigen::SparseMatrix<int> CreateBlockJacobian(
     const TripletSparseMatrix& block_jacobian_transpose) {
   typedef Eigen::SparseMatrix<int> SparseMatrix;
@@ -179,7 +179,6 @@ void OrderingForSparseNormalCholeskyUsingCXSparse(
 }
 
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 2)
 void OrderingForSparseNormalCholeskyUsingEigenSparse(
     const TripletSparseMatrix& tsm_block_jacobian_transpose,
     int* ordering) {
@@ -212,7 +211,6 @@ void OrderingForSparseNormalCholeskyUsingEigenSparse(
   }
 #endif  // CERES_USE_EIGEN_SPARSE
 }
-#endif
 
 }  // namespace
 
@@ -385,10 +383,7 @@ static void MaybeReorderSchurComplementColumnsUsingEigen(
     const int size_of_first_elimination_group,
     const ProblemImpl::ParameterMap& parameter_map,
     Program* program) {
-#if !EIGEN_VERSION_AT_LEAST(3, 2, 2) || !defined(CERES_USE_EIGEN_SPARSE)
-  return;
-#else
-
+#if defined(CERES_USE_EIGEN_SPARSE)
   std::unique_ptr<TripletSparseMatrix> tsm_block_jacobian_transpose(
       program->CreateJacobianBlockSparsityTranspose());
 
@@ -527,18 +522,14 @@ bool ReorderProgramForSchurTypeLinearSolver(
 
   // Schur type solvers also require that their residual blocks be
   // lexicographically ordered.
-  if (!LexicographicallyOrderResidualBlocks(size_of_first_elimination_group,
-                                            program,
-                                            error)) {
-    return false;
-  }
-
-  return true;
+  return LexicographicallyOrderResidualBlocks(
+      size_of_first_elimination_group, program, error);
 }
 
-bool ReorderProgramForSparseNormalCholesky(
+bool ReorderProgramForSparseCholesky(
     const SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const ParameterBlockOrdering& parameter_block_ordering,
+    int start_row_block,
     Program* program,
     string* error) {
   if (parameter_block_ordering.NumElements() != program->NumParameterBlocks()) {
@@ -552,7 +543,7 @@ bool ReorderProgramForSparseNormalCholesky(
 
   // Compute a block sparse presentation of J'.
   std::unique_ptr<TripletSparseMatrix> tsm_block_jacobian_transpose(
-      program->CreateJacobianBlockSparsityTranspose());
+      program->CreateJacobianBlockSparsityTranspose(start_row_block));
 
   vector<int> ordering(program->NumParameterBlocks(), 0);
   vector<ParameterBlock*>& parameter_blocks =
@@ -578,18 +569,9 @@ bool ReorderProgramForSparseNormalCholesky(
     return true;
 
   } else if (sparse_linear_algebra_library_type == EIGEN_SPARSE) {
-#if EIGEN_VERSION_AT_LEAST(3, 2, 2)
-       OrderingForSparseNormalCholeskyUsingEigenSparse(
+    OrderingForSparseNormalCholeskyUsingEigenSparse(
         *tsm_block_jacobian_transpose,
         &ordering[0]);
-#else
-    // For Eigen versions less than 3.2.2, there is nothing to do as
-    // older versions of Eigen do not expose a method for doing
-    // symbolic analysis on pre-ordered matrices, so a block
-    // pre-ordering is a bit pointless.
-
-    return true;
-#endif
   }
 
   // Apply ordering.
@@ -600,6 +582,18 @@ bool ReorderProgramForSparseNormalCholesky(
 
   program->SetParameterOffsetsAndIndex();
   return true;
+}
+
+int ReorderResidualBlocksByPartition(
+    const std::unordered_set<ResidualBlockId>& bottom_residual_blocks,
+    Program* program) {
+  auto residual_blocks = program->mutable_residual_blocks();
+  auto it = std::partition(
+      residual_blocks->begin(), residual_blocks->end(),
+      [&bottom_residual_blocks](ResidualBlock* r) {
+        return bottom_residual_blocks.count(r) == 0;
+      });
+  return it - residual_blocks->begin();
 }
 
 }  // namespace internal

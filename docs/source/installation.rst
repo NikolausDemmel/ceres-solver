@@ -23,16 +23,15 @@ Dependencies
 
   .. NOTE ::
 
-    All versions of Ceres > 1.14 require a **fully C++11-compliant**
-    compiler.  In versions <= 1.14, C++11 was an optional requirement
-    controlled by the ``CXX11 [Default: OFF]`` build option.
+    Starting with v2.0 Ceres requires a **fully C++14-compliant**
+    compiler.  In versions <= 1.14, C++11 was an optional requirement.
 
 Ceres relies on a number of open source libraries, some of which are
 optional. For details on customizing the build process, see
 :ref:`section-customizing` .
 
 - `Eigen <http://eigen.tuxfamily.org/index.php?title=Main_Page>`_
-  3.2.2 or later **strongly** recommended, 3.1.0 or later **required**.
+  3.3 or later **required**.
 
   .. NOTE ::
 
@@ -378,7 +377,7 @@ Windows
   <https://github.com/tbennun/ceres-windows>`_ for Ceres Solver by Tal
   Ben-Nun.
 
-On Windows, we support building with Visual Studio 2013 Release 4 or newer. Note
+On Windows, we support building with Visual Studio 2015.2 of newer. Note
 that the Windows port is less featureful and less tested than the
 Linux or Mac OS X versions due to the lack of an officially supported
 way of building SuiteSparse and CXSparse.  There are however a number
@@ -409,8 +408,8 @@ dependencies.
 #. Get dependencies; unpack them as subdirectories in ``ceres/``
    (``ceres/eigen``, ``ceres/glog``, etc)
 
-   #. ``Eigen`` 3.1 (needed on Windows; 3.0.x will not work). There is
-      no need to build anything; just unpack the source tarball.
+   #. ``Eigen`` 3.3 . There is no need to build anything; just unpack
+      the source tarball.
 
    #. ``google-glog`` Open up the Visual Studio solution and build it.
    #. ``gflags`` Open up the Visual Studio solution and build it.
@@ -431,7 +430,7 @@ dependencies.
 
 #. Unpack the Ceres tarball into ``ceres``. For the tarball, you
    should get a directory inside ``ceres`` similar to
-   ``ceres-solver-1.3.0``. Alternately, checkout Ceres via ``git`` to
+   ``ceres-solver-1.14.0``. Alternately, checkout Ceres via ``git`` to
    get ``ceres-solver.git`` inside ``ceres``.
 
 #. Install ``CMake``,
@@ -538,6 +537,7 @@ your NDK is present in that same directory. You may then execute
 the sample by running for example:
 
 .. code-block:: bash
+
     adb shell
     cd /data/local/tmp
     LD_LIBRARY_PATH=/data/local/tmp ./helloworld
@@ -693,15 +693,6 @@ Options controlling Ceres configuration
 #. ``EIGENSPARSE [Default: ON]``: By default, Ceres will not use
    Eigen's sparse Cholesky factorization.
 
-   .. NOTE::
-
-      For good performance, use Eigen version 3.2.2 or later.
-
-   .. NOTE::
-
-      Unlike the rest of Eigen (>= 3.1.1 MPL2, < 3.1.1 LGPL), Eigen's sparse
-      Cholesky factorization is (still) licensed under the LGPL.
-
 #. ``GFLAGS [Default: ON]``: Turn this ``OFF`` to build Ceres without
    ``gflags``. This will also prevent some of the example code from
    building.
@@ -717,7 +708,7 @@ Options controlling Ceres configuration
    gains in the ``SPARSE_SCHUR`` solver, you can disable some of the
    template specializations by turning this ``OFF``.
 
-#. ``CERES_THREADING_MODEL [Default: CXX11_THREADS > OPENMP > NO_THREADS]``:
+#. ``CERES_THREADING_MODEL [Default: CXX_THREADS > OPENMP > NO_THREADS]``:
    Multi-threading backend Ceres should be compiled with.  This will
    automatically be set to only accept the available subset of threading
    options in the CMake GUI.
@@ -858,13 +849,13 @@ used:
 
     # helloworld
     add_executable(helloworld helloworld.cc)
-    target_link_libraries(helloworld ${CERES_LIBRARIES})
+    target_link_libraries(helloworld Ceres::ceres)
 
 Irrespective of whether Ceres was installed or exported, if multiple
 versions are detected, set: ``Ceres_DIR`` to control which is used.
 If Ceres was installed ``Ceres_DIR`` should be the path to the
 directory containing the installed ``CeresConfig.cmake`` file
-(e.g. ``/usr/local/share/Ceres``).  If Ceres was exported, then
+(e.g. ``/usr/local/lib/cmake/Ceres``).  If Ceres was exported, then
 ``Ceres_DIR`` should be the path to the exported Ceres build
 directory.
 
@@ -911,8 +902,6 @@ The Ceres components which can be specified are:
 
 #. ``Multithreading``: Ceres built with *a* multithreading library.
    This is equivalent to (``CERES_THREAD != NO_THREADS``).
-
-#. ``C++11``: Ceres built with C++11.
 
 To specify one/multiple Ceres components use the ``COMPONENTS`` argument to
 `find_package()
@@ -1007,7 +996,7 @@ When a project like Ceres is installed using CMake, or its build
 directory is exported into the local CMake package registry (see
 :ref:`section-install-vs-export`), in addition to the public headers
 and compiled libraries, a set of CMake-specific project configuration
-files are also installed to: ``<INSTALL_ROOT>/share/Ceres`` (if Ceres
+files are also installed to: ``<INSTALL_ROOT>/lib/cmake/Ceres`` (if Ceres
 is installed), or created in the build directory (if Ceres' build
 directory is exported).  When `find_package
 <http://www.cmake.org/cmake/help/v3.2/command/find_package.html>`_ is
@@ -1022,9 +1011,9 @@ looks for:
 
    Which is written by the developers of the project, and is
    configured with the selected options and installed locations when
-   the project is built and defines the CMake variables:
-   ``<PROJECT_NAME>_INCLUDE_DIRS`` & ``<PROJECT_NAME>_LIBRARIES``
-   which are used by the caller to import the project.
+   the project is built and imports the project targets and/or defines
+   the legacy CMake variables: ``<PROJECT_NAME>_INCLUDE_DIRS`` &
+   ``<PROJECT_NAME>_LIBRARIES`` which are used by the caller.
 
 The ``<PROJECT_NAME>Config.cmake`` typically includes a second file
 installed to the same location:
@@ -1039,32 +1028,26 @@ as a CMake target that was declared locally in the current CMake
 project using ``add_library()``.  However, imported targets refer to
 objects that have already been built by a different CMake project.
 Principally, an imported target contains the location of the compiled
-object and all of its public dependencies required to link against it.
-Any locally declared target can depend on an imported target, and
-CMake will manage the dependency chain, just as if the imported target
-had been declared locally by the current project.
+object and all of its public dependencies required to link against it
+as well as all required include directories.  Any locally declared target
+can depend on an imported target, and CMake will manage the dependency
+chain, just as if the imported target had been declared locally by the
+current project.
 
 Crucially, just like any locally declared CMake target, an imported target is
 identified by its **name** when adding it as a dependency to another target.
 
-Thus, if in a project using Ceres you had the following in your CMakeLists.txt:
+Since v2.0, Ceres has used the target namespace feature of CMake to prefix
+its export targets: ``Ceres::ceres``.  However, historically the Ceres target
+did not have a namespace, and was just called ``ceres``.
 
-.. code-block:: cmake
-
-    find_package(Ceres REQUIRED)
-    message("CERES_LIBRARIES = ${CERES_LIBRARIES}")
-
-You would see the output: ``CERES_LIBRARIES = ceres``.  **However**,
-here ``ceres`` is an **imported target** created when
-``CeresTargets.cmake`` was read as part of ``find_package(Ceres
-REQUIRED)``.  It does **not** refer (directly) to the compiled Ceres
-library: ``libceres.a/so/dylib/lib``.  This distinction is important,
-as depending on the options selected when it was built, Ceres can have
-public link dependencies which are encapsulated in the imported target
-and automatically added to the link step when Ceres is added as a
-dependency of another target by CMake.  In this case, linking only
-against ``libceres.a/so/dylib/lib`` without these other public
-dependencies would result in a linker error.
+Whilst an alias target called ``ceres`` is still provided in v2.0 for backwards
+compatibility, it creates a potential drawback, if you failed to call
+``find_package(Ceres)``, and Ceres is installed in a default search path for
+your compiler, then instead of matching the imported Ceres target, it will
+instead match the installed libceres.so/dylib/a library.  If this happens you
+will get either compiler errors for missing include directories or linker errors
+due to missing references to Ceres public dependencies.
 
 Note that this description applies both to projects that are
 **installed** using CMake, and to those whose **build directory is
@@ -1125,26 +1108,6 @@ Ceres) to invoke ``find_package(Ceres)`` in ``FooConfig.cmake``, thus
 ``ceres`` will be defined as an imported target when CMake processes
 ``Bar``.  An example of the required modifications to
 ``FooConfig.cmake`` are show below:
-
-.. code-block:: cmake
-
-    # Importing Ceres in FooConfig.cmake using CMake 2.8.x style.
-    #
-    # When configure_file() is used to generate FooConfig.cmake from
-    # FooConfig.cmake.in, @Ceres_DIR@ will be replaced with the current
-    # value of Ceres_DIR being used by Foo.  This should be passed as a hint
-    # when invoking find_package(Ceres) to ensure that the same install of
-    # Ceres is used as was used to build Foo.
-    set(CERES_DIR_HINTS @Ceres_DIR@)
-
-    # Forward the QUIET / REQUIRED options.
-    if (Foo_FIND_QUIETLY)
-       find_package(Ceres QUIET HINTS ${CERES_DIR_HINTS})
-    elseif (Foo_FIND_REQUIRED)
-       find_package(Ceres REQUIRED HINTS ${CERES_DIR_HINTS})
-    else ()
-       find_package(Ceres HINTS ${CERES_DIR_HINTS})
-    endif()
 
 .. code-block:: cmake
 

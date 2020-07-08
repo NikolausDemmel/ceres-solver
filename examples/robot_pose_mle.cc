@@ -160,7 +160,7 @@ DEFINE_double(range_stddev, 0.01, "The standard deviation of range readings of "
               "the robot.");
 
 // The stride length of the dynamic_autodiff_cost_function evaluator.
-static const int kStride = 10;
+static constexpr int kStride = 10;
 
 struct OdometryConstraint {
   typedef AutoDiffCostFunction<OdometryConstraint, 1, 1> OdometryCostFunction;
@@ -275,7 +275,7 @@ void PrintState(const vector<double>& odometry_readings,
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  CERES_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
+  GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   // Make sure that the arguments parsed are all positive.
   CHECK_GT(FLAGS_corridor_length, 0.0);
   CHECK_GT(FLAGS_pose_separation, 0.0);

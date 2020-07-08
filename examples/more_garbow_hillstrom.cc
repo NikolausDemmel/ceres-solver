@@ -80,7 +80,7 @@ static void SetNumericDiffOptions(ceres::NumericDiffOptions* options) {
 
 #define BEGIN_MGH_PROBLEM(name, num_parameters, num_residuals)            \
   struct name {                                                           \
-    static const int kNumParameters = num_parameters;                     \
+    static constexpr int kNumParameters = num_parameters;                 \
     static const double initial_x[kNumParameters];                        \
     static const double lower_bounds[kNumParameters];                     \
     static const double upper_bounds[kNumParameters];                     \
@@ -580,7 +580,7 @@ template<typename TestProblem> bool Solve(bool is_constrained, int trial) {
 }  // namespace ceres
 
 int main(int argc, char** argv) {
-  CERES_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
+  GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
   using ceres::examples::Solve;
