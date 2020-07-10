@@ -149,10 +149,15 @@ if(NOT TBB_FOUND)
     # TODO: Check compiler version to see the suffix should be <arch>/gcc4.1 or
     #       <arch>/gcc4.1. For now, assume that the compiler is more recent than
     #       gcc 4.4.x or later.
+    #       Update 07/2020: Up to TBB 2020.2 it seems the possible versions of intel provided binary packages are: 4.1, 4.4, 4.7, 4.8
+    #       $ find /opt/intel/ -type d -name compilers_and_libraries* | grep 20........ -o | sort | uniq | tr '\n' ' '
+    #       2018.0.128 2018.2.199 2018.3.222 2018.5.274 2019.0.117 2019.1.144 2019.2.187 2019.3.199 2019.4.243 2019.5.281 2020.0.166 2020.1.217
+    #       $ find /opt/intel/ -type d -name gcc* | grep gcc... -o | sort | uniq | tr '\n' ' '
+    #       gcc4.1 gcc4.4 gcc4.7 gcc4.8
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-      set(TBB_LIB_PATH_SUFFIX "lib/intel64/gcc4.4")
+      set(TBB_LIB_PATH_SUFFIX "lib/intel64/gcc4.1;lib/intel64/gcc4.4;lib/intel64/gcc4.7;lib/intel64/gcc4.8")
     elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
-      set(TBB_LIB_PATH_SUFFIX "lib/ia32/gcc4.4")
+      set(TBB_LIB_PATH_SUFFIX "lib/ia32/gcc4.1;lib/ia32/gcc4.4;lib/ia32/gcc4.7;lib/ia32/gcc4.8")
     endif()
   endif()
 
