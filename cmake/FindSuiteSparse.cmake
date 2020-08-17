@@ -315,6 +315,7 @@ if (SUITESPARSEQR_FOUND)
     # Add the TBB libraries to the SuiteSparseQR libraries (the only
     # libraries to optionally depend on TBB).
     list(APPEND SUITESPARSEQR_LIBRARY ${TBB_LIBRARIES})
+    message(STATUS "TBB_LIBRARIES: ${TBB_LIBRARIES}")
   else()
     message(STATUS "Did not find Intel TBB library, assuming SuiteSparseQR was "
       "not compiled with TBB.")
