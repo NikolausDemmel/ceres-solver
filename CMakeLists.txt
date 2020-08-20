@@ -31,6 +31,9 @@
 
 cmake_minimum_required(VERSION 3.5)
 cmake_policy(VERSION 3.5)
+if (POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
 
 # Set the C++ version (must be >= C++14) when compiling Ceres.
 #
